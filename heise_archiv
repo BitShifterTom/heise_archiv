@@ -5,6 +5,7 @@ exit 1
 fi
 
 year=${1}
+magazine="ct"
 
 scratch=/tmp/$(date +%s)
 
@@ -19,10 +20,20 @@ curl -b ${scratch} -c ${scratch} -k -L -F "token=${token1}" "https://m.heise.de/
 curl -b ${scratch} -c ${scratch} -k -L -F "token=${token2}" "https://shop.heise.de/customer/account/loginRemote" >/dev/null 2>&1
 
 for i in `seq -f %g 1 27`; do
-	if [ ! -f ${year}/ct.${year}.${i}.pdf ]; then
-		curl -b ${scratch} -f -k -L --retry 99 "https://www.heise.de/select/ct/archiv/${year}/${i}/download" -o ${year}/ct.${year}.${i}.pdf --create-dirs
-		curl -b ${scratch} -f -k -L --retry 99 "https://heise.cloudimg.io/v7/_www-heise-de_/select/thumbnail/ct/${year}/${i}.jpg" -o ${year}/ct.${year}.${i}.jpg --create-dirs
+	if [ ! -f ${year}/${magazine}.${year}.${i}.jpg ]; then
+		echo "Loading thumbnail thumbnail  ${year}/${magazine}.${year}.${i}.jpg ..."
+		curl -b ${scratch} -f -k -L --retry 99 "https://heise.cloudimg.io/v7/_www-heise-de_/select/thumbnail/${magazine}/${year}/${i}.jpg" -o ${year}/${magazine}.${year}.${i}.jpg --create-dirs
 	fi
+	if [ ! -f ${year}/${magazine}.${year}.${i}.pdf ]; then
+		echo "Loading issue file ${year}/${magazine}.${year}.${i}.pdf ..."
+		curl -b ${scratch} -f -k -L --retry 99 "https://www.heise.de/select/${magazine}/archiv/${year}/${i}/download" -o ${year}/${magazine}.${year}.${i}.pdf --create-dirs
+	fi
+	if [ $(file --mime-type -b ${year}/${magazine}.${year}.${i}.pdf) != "application/pdf" ]; then
+		echo "Waiting & Re-Loading issue file ${year}/${magazine}.${year}.${i}.pdf ..."
+		sleep 60
+		curl -b ${scratch} -f -k -L --retry 99 "https://www.heise.de/select/${magazine}/archiv/${year}/${i}/download" -o ${year}/${magazine}.${year}.${i}.pdf --create-dirs
+	fi
+	echo "Downloaded issue file  ${year}/${magazine}.${year}.${i}.pdf  (contenttype is $(file --mime-type -b ${year}/${magazine}.${year}.${i}.pdf) )"
 done
 
 rm -f ${scratch}.html ${scratch}
